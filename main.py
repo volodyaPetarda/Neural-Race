@@ -7,7 +7,7 @@ from brains.user_brain import UserBrain
 from car import Car
 from engines.physics_engine import PhysicsEngine
 from engines.render_engine import RenderEngine
-from game import Game
+from game import Game, GameContext
 from figures import Vector2D, Segment
 from track import Track
 
@@ -20,10 +20,26 @@ if __name__ == "__main__":
     track = Track(
         Vector2D(1000, 500),
         math.pi/2,
-        [Segment(Vector2D(100, 100), Vector2D(400, 200)), Segment(Vector2D(400, 500), Vector2D(500, 500))],
+        [
+            Segment(Vector2D(100, 100), Vector2D(400, 200)),
+            Segment(Vector2D(400, 500), Vector2D(500, 500)),
+            Segment(Vector2D(0, 0), Vector2D(1920, 0)),
+            Segment(Vector2D(1917, 0), Vector2D(1917, 1080)),
+            Segment(Vector2D(1920, 1077), Vector2D(0, 1077)),
+            Segment(Vector2D(0, 1080), Vector2D(0, 0))
+        ],
         [Segment(Vector2D(200, 200), Vector2D(300, 300)), Segment(Vector2D(500, 600), Vector2D(600, 600))],
     )
-    game = Game(physics_engine, render_engine, [user_car], {user_car: True}, track)
+    game_context = GameContext(
+        physics_engine=physics_engine,
+        render_engine=render_engine,
+        cars=[user_car],
+        draw_rewards={user_car: True},
+        draw_rays={user_car: True},
+        rays_count={user_car: 16},
+        track=track,
+    )
+    game = Game(game_context)
     TARGET_FPS = 60
     last_time = time.perf_counter()
     while True:

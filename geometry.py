@@ -1,4 +1,5 @@
 import math
+from typing import List
 
 from figures import Segment, Rectangle, Vector2D, ccw, on_segment, Ray, dot
 
@@ -93,7 +94,7 @@ def ray_segment_intersection(
             return ray.start
         return None
 
-    t_numerator = (segment.x1 - ray.start.x) * (segment.y1 - segment.y2) + (
+    t_numerator = (segment.x1 - ray.start.x) * (segment.y1 - segment.y2) - (
             ray.start.y - segment.y1) * (segment.x2 - segment.x1)
     t = t_numerator / denominator
 
@@ -108,3 +109,19 @@ def ray_segment_intersection(
         return intersection
 
     return None
+
+def get_batch_ray_intersect_segments(rays: List[Ray], segments: List[Segment]) -> list[Vector2D | None]:
+    result = []
+    for ray in rays:
+        min_len = float('inf')
+        point = None
+        for segment in segments:
+            intersection = ray_segment_intersection(ray, segment, epsilon=1e-6)
+            if intersection is None:
+                continue
+            cur_len = (intersection - ray.start).square_magnitude()
+            if cur_len < min_len:
+                min_len = cur_len
+                point = intersection
+        result.append(point)
+    return result

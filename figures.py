@@ -25,6 +25,9 @@ class Vector2D:
     def magnitude(self):
         return math.sqrt(self.x * self.x + self.y * self.y)
 
+    def square_magnitude(self):
+        return self.x * self.x + self.y * self.y
+
     def rotate(self, angle):
         return Vector2D(self.x * math.cos(angle) - self.y * math.sin(angle), self.x * math.sin(angle) + self.y * math.cos(angle))
 
@@ -115,3 +118,6 @@ def on_segment(p1: Vector2D, p2: Vector2D, p3: Vector2D, epsilon=1e-9) -> bool:
         (min(p1.x, p2.x) - epsilon <= p3.x <= max(p1.x, p2.x) + epsilon) and
         (min(p1.y, p2.y) - epsilon <= p3.y <= max(p1.y, p2.y) + epsilon)
     )
+
+def get_batch_rays(origin: Vector2D, angle: float, num_rays: int) -> List[Ray]:
+    return [Ray(origin, Vector2D.one_rotated(angle + 2 * math.pi * (i / num_rays))) for i in range(num_rays)]

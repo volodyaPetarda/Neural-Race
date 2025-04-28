@@ -5,17 +5,20 @@ import pygame
 
 from car import Car
 from engines.render_engine_context import RenderEngineContext
+from figures import get_batch_rays
+from geometry import get_batch_ray_intersect_segments
 from track import Track
 
 
 class RenderEngine:
-    def __init__(self, screen_size=(1920, 1080)):
-        self.screen = pygame.display.set_mode(screen_size)
+    def __init__(self):
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         pygame.display.set_caption("Car Race Game")
 
     def next_frame(self, context: RenderEngineContext):
-        self.screen.fill((0, 0, 0))
+        self.screen.fill((25, 25, 25))
 
+        self._draw_rays(context)
         self._draw_walls(context)
         self._draw_rewards(context)
         self._draw_cars(context)
@@ -25,12 +28,6 @@ class RenderEngine:
     def _draw_cars(self, context: RenderEngineContext):
         cars = context.cars
         for car in cars:
-            car_rect = pygame.Rect(
-                int(car.position.x),
-                int(car.position.y),
-                car.width,
-                car.length
-            )
             car_surface = pygame.Surface((car.length, car.width), pygame.SRCALPHA)
             pygame.draw.rect(car_surface, (255, 0, 0), (0, 0, car.length, car.width))
 
@@ -67,3 +64,39 @@ class RenderEngine:
                     3  # Толщина линии
                 )
 
+    def _draw_rays(self, context: RenderEngineContext):
+        cars = context.cars
+        draw_rays = context.draw_rays
+        rays_count = context.rays_count
+        walls = context.track.walls
+        for car in cars:
+            if not draw_rays[car]:
+                continue
+
+            rays = get_batch_rays(car.position, car.angle, rays_count[car])
+            walls_intersects = get_batch_ray_intersect_segments(rays, walls)
+
+            for wall_intersect in walls_intersects:
+                if wall_intersect is None:
+                    continue
+                pygame.draw.line(
+                    self.screen,
+                    (150, 150, 150),
+                    (car.position.x, car.position.y),
+                    (wall_intersect.x, wall_intersect.y),
+                1
+                )
+
+            reward = context.track.get_reward_segment(context.cars_reward_ind[car])
+            reward_intersects = get_batch_ray_intersect_segments(rays, [reward])
+
+            for reward_intersect in reward_intersects:
+                if reward_intersect is None:
+                    continue
+                pygame.draw.line(
+                    self.screen,
+                    (255, 255, 150),
+                    (car.position.x, car.position.y),
+                    (reward_intersect.x, reward_intersect.y),
+                1
+                )

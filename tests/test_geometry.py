@@ -120,6 +120,8 @@ def test_rotated_intersections(rect_params, segment_coords, expected):
         ((1, 1), (2, 2), ((1, 1), (1, 1)), (1.0, 1.0)),
         # Точечный отрезок вне луча
         ((0, 0), (1, 0), ((2, 0), (2, 0)), None),
+        ((2, 2), (-1, -1), ((0, 2), (2, 0)), (1.0, 1.0)),
+        ((2, 2), (-1, -1), ((0, 5), (5, 0)), None),
     ]
 )
 def test_ray_segment_intersection(ray_start, ray_dir, segment_coords, expected_point):

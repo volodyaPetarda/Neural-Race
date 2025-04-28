@@ -1,0 +1,9 @@
+@startuml
+[*] -> TrackSelection
+TrackSelection --> AvatarGeneration: Трасса выбрана
+AvatarGeneration --> ModelLoading: Аватары созданы
+ModelLoading --> RaceInitialization: Модель загружена
+RaceInitialization --> InRace: Старт гонки
+InRace --> RaceEnded: Финиш/Авария
+RaceEnded --> [*]
+@enduml

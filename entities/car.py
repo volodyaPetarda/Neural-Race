@@ -1,8 +1,10 @@
 from typing import List
 
-from actions import BaseAction
+from entities.actions import BaseAction
 from brains.base_brain import BaseBrain
-from figures import Vector2D, Rectangle
+from entities.car_state import CarState
+from entities.figures import Vector2D, Rectangle
+from entities.player_state import PlayerState
 
 
 class Car:
@@ -14,8 +16,8 @@ class Car:
         self.width = width
         self.length = length
 
-    def get_actions(self) -> List[BaseAction]:
-        return self.brain.get_actions()
+    def get_actions(self, player_state: PlayerState, car_state: CarState, rays_dists: List[float]) -> List[BaseAction]:
+        return self.brain.get_actions(player_state, car_state, rays_dists)
 
     @property
     def position(self) -> Vector2D:

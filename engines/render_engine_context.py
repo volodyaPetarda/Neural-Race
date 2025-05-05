@@ -1,13 +1,16 @@
 from typing import List
 
-from car import Car
-from track import Track
+import numpy as np
+
+from entities.car import Car
+from entities.track import Track
 
 
 class RenderEngineContext:
-    def __init__(self, cars: List[Car], track: Track, cars_reward_ind: dict[Car, int], draw_rewards: dict[Car, bool], rays_count: dict[Car, int], draw_rays: dict[Car, bool]):
+    def __init__(self, cars: List[Car], track: Track, precomputed_numpy_walls: np.array, cars_reward_ind: dict[Car, int], draw_rewards: dict[Car, bool], rays_count: dict[Car, int], draw_rays: dict[Car, bool]):
         self.cars = cars
         self.track = track
+        self.precomputed_numpy_walls = precomputed_numpy_walls
         self.cars_reward_ind = cars_reward_ind
         self.draw_rewards = draw_rewards
         self.rays_count = rays_count

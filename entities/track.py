@@ -1,6 +1,6 @@
 from typing import List
 
-from figures import Vector2D, Segment
+from entities.figures import Vector2D, Segment
 
 
 class Track:

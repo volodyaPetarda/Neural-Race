@@ -2,15 +2,17 @@ from typing import List
 
 import pygame
 
-from actions import BaseAction, AccelerateAction, RotateAction, NitroAction, BackAction
+from entities.actions import BaseAction, AccelerateAction, RotateAction, NitroAction, BackAction
 from brains.base_brain import BaseBrain, BaseBrainType
+from entities.car_state import CarState
+from entities.player_state import PlayerState
 
 
 class UserBrain(BaseBrain):
     def get_brain_type(self) -> BaseBrainType:
         return BaseBrainType.UserBrain
 
-    def get_actions(self) -> List[BaseAction]:
+    def get_actions(self, player_state: PlayerState, car_state: CarState, rays_dists: List[float]) -> List[BaseAction]:
         keys = pygame.key.get_pressed()
         actions = []
         if keys[pygame.K_w]:

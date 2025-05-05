@@ -1,6 +1,8 @@
 import copy
 import math
-from typing import List
+from typing import List, Tuple
+
+import numpy as np
 
 
 class Vector2D:
@@ -11,6 +13,15 @@ class Vector2D:
     @staticmethod
     def one_rotated(angle):
         return Vector2D(math.cos(angle), math.sin(angle))
+
+    @staticmethod
+    def cos_angle(first: 'Vector2D', second: 'Vector2D') -> float:
+        dot_product = dot(first, second)
+        mag1 = first.magnitude()
+        mag2 = second.magnitude()
+        if mag1 == 0.0 or mag2 == 0.0:
+            return 0.0
+        return dot_product / (mag1 * mag2)
 
     def perpendicular(self):
         return Vector2D(-self.y, self.x)
@@ -121,3 +132,18 @@ def on_segment(p1: Vector2D, p2: Vector2D, p3: Vector2D, epsilon=1e-9) -> bool:
 
 def get_batch_rays(origin: Vector2D, angle: float, num_rays: int) -> List[Ray]:
     return [Ray(origin, Vector2D.one_rotated(angle + 2 * math.pi * (i / num_rays))) for i in range(num_rays)]
+
+
+def get_numpy_batch_rays(origin: 'Vector2D', angle: float, num_rays: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ray_starts = np.full((num_rays, 2), [origin.x, origin.y], dtype=np.float64)
+
+    angles = angle + 2 * np.pi * np.arange(num_rays) / num_rays
+
+    cos_theta = np.cos(angles)
+    sin_theta = np.sin(angles)
+    ray_dirs = np.column_stack((cos_theta, sin_theta))
+
+    mask = np.abs(ray_dirs) > 1e-9
+    inv_dirs = np.divide(1.0, ray_dirs, where=mask, out=np.full_like(ray_dirs, np.inf))
+
+    return ray_starts, ray_dirs, inv_dirs

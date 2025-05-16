@@ -1,5 +1,7 @@
 from typing import List
 
+import pygame
+
 from entities.actions import BaseAction
 from brains.base_brain import BaseBrain
 from entities.car_state import CarState
@@ -8,13 +10,14 @@ from entities.player_state import PlayerState
 
 
 class Car:
-    def __init__(self, brain: BaseBrain, position: Vector2D, velocity: Vector2D, angle: float, width=10, length=30):
+    def __init__(self, brain: BaseBrain, position: Vector2D, velocity: Vector2D, angle: float, image: pygame.Surface, width=15, length=30):
         self.brain = brain
         self._position = position
         self._velocity = velocity
         self._angle = angle
         self.width = width
         self.length = length
+        self.image = pygame.transform.scale(image, (length, width))
 
     def get_actions(self, player_state: PlayerState, car_state: CarState, rays_dists: List[float]) -> List[BaseAction]:
         return self.brain.get_actions(player_state, car_state, rays_dists)

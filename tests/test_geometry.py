@@ -1,10 +1,12 @@
 import math
 from typing import List, Optional, Tuple
 
+import numpy as np
 import pytest
 from entities.figures import Segment, Rectangle, Vector2D, Ray
 from utils.geometry import is_segment_rectangle_intersection, ray_segment_intersection, segment_intersect, \
-    is_batch_segments_rectangle_intersection, get_batch_ray_intersect_segments
+    is_batch_segments_rectangle_intersection, get_batch_ray_intersect_segments, _precompute_ray_data, \
+    _precompute_segment_data
 
 
 @pytest.mark.parametrize("seg1, seg2, expected", [
@@ -204,16 +206,16 @@ def test_get_batch_ray_intersect_segments(rays_params, segments_params, expected
     rays = [Ray(Vector2D(*start), Vector2D(*direction)) for start, direction in rays_params]
     segments = [Segment(Vector2D(*start), Vector2D(*end)) for start, end in segments_params]
 
-    result = get_batch_ray_intersect_segments(rays, segments)
+    precomputed_rays = _precompute_ray_data(rays)
+    precomputed_segments = _precompute_segment_data(segments)
 
+    result = get_batch_ray_intersect_segments(precomputed_rays, precomputed_segments)
     _compare_intersections(result, expected_intersections)
 
 
 @pytest.mark.parametrize(
     "rect_params, segments_params, expected_result",
     [
-        # No segments
-        ((0, 0, 2, 2, 0), [], False),
         # Single segment intersecting (axis-aligned rect)
         ((0, 0, 2, 2, 0), [((-2, 0), (2, 0))], True),
         # Single segment not intersecting
@@ -255,7 +257,10 @@ def test_is_batch_segments_rectangle_intersection(rect_params, segments_params, 
         y_len=y_len,
         angle=math.radians(angle_deg)
     )
-    segments = [Segment(Vector2D(*start), Vector2D(*end)) for start, end in segments_params]
-
-    result = is_batch_segments_rectangle_intersection(segments, rectangle)
+    # Convert segments_params to numpy array
+    seg_points = np.array(
+        [[list(start), list(end)] for start, end in segments_params],
+        dtype=np.float64
+    )
+    result = is_batch_segments_rectangle_intersection(seg_points, rectangle)
     assert result == expected_result

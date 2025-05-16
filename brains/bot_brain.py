@@ -17,18 +17,18 @@ from entities.q_network import QNetwork
 class Trainer:
     def __init__(self, num_rays: int):
 
-        self.q_net = QNetwork([num_rays + 3, 128, 64, 32])
-        self.target_net = QNetwork([num_rays + 3, 128, 64, 32])
+        self.q_net = QNetwork([num_rays + 4, 128, 128, 64, 32])
+        self.target_net = QNetwork([num_rays + 4, 128, 128, 64, 32])
         self.target_net.load_state_dict(self.q_net.state_dict())
         self.target_net.eval()
 
 
-        self.optimizer = optim.Adam(self.q_net.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(self.q_net.parameters(), lr=5e-4)
 
-        self.batch_size = 128
-        self.min_size_for_train = 10000
-        self.train_every = 5
-        self.copy_every = 2048 * 32
+        self.batch_size = 64
+        self.min_size_for_train = 5000
+        self.train_every = 3
+        self.copy_every = 2048 * 4
         self.gamma = 0.95
         self.step = 0
         self.max_len = 1000000
@@ -52,7 +52,6 @@ class Trainer:
 
     def train(self):
         if self.step % self.copy_every == 0:
-            # print('copy')
             self.target_net.load_state_dict(self.q_net.state_dict())
         self.step += 1
         if self.step % self.train_every != 0:
@@ -74,11 +73,8 @@ class Trainer:
         done = torch.tensor([next_player_state.deaths - player_state.deaths for player_state, next_player_state in
                              zip(player_states, next_player_states)])
 
-        rewards = torch.tensor([self.reward(player_state, next_player_state) for player_state, next_player_state in
-                                zip(player_states, next_player_states)])
-        if torch.any(rewards.abs() > 100):
-            print("warning")
-            print(rewards)
+        rewards = torch.tensor([self.reward(player_state, car_state, next_player_state, next_car_state) for player_state, next_player_state, car_state, next_car_state in
+                                zip(player_states, next_player_states, car_states, next_car_states)])
         first_input_data = self.concat_to_input(rays_dists, car_states, player_states)
         second_input_data = self.concat_to_input(next_rays_dists, next_car_states, next_player_states)
         output = self.q_net(first_input_data)
@@ -110,14 +106,14 @@ class Trainer:
             print(f'target_output {target_output[0:5]}')
         self.optimizer.step()
 
-    def reward(self, prev_player_state: PlayerState|None, player_state: PlayerState):
+    def reward(self, prev_player_state: PlayerState|None, prev_car_state: CarState|None, player_state: PlayerState, car_state: CarState):
         if prev_player_state is None:
             return 0
         reward = 0
-        reward += max(0, player_state.rewards_collected - prev_player_state.rewards_collected) * 2.5
-        reward += (player_state.deaths - prev_player_state.deaths) * -25
+        reward += max(0, player_state.rewards_collected - prev_player_state.rewards_collected) * 0.5
+        reward += (player_state.deaths - prev_player_state.deaths) * -5
         delta_time = (player_state.time_elapsed - prev_player_state.time_elapsed)
-        reward += delta_time * -0.5
+        reward += (player_state.time_elapsed - player_state.last_reward_collected + 0.5) * -0.25 * delta_time
         return reward
 
 
@@ -125,8 +121,8 @@ class Trainer:
         rays_dists = torch.tensor(rays_dists)
         velocities = [car_state.velocity.rotate(-car_state.angle) for car_state in car_states]
         car_states = torch.tensor([[velocity.x, velocity.y] for velocity in velocities])
-        player_states = torch.tensor([[player_state.delta_time] for player_state in player_states])
-        return torch.cat((rays_dists, car_states, player_states), dim=1) / torch.tensor([1000.0 for _ in range(len(rays_dists[0]))] + [200, 200] + [1/60])
+        player_states = torch.tensor([[player_state.delta_time, player_state.time_elapsed - player_state.last_reward_collected] for player_state in player_states])
+        return torch.cat((rays_dists, car_states, player_states), dim=1) / torch.tensor([1000.0 for _ in range(len(rays_dists[0]))] + [200, 200] + [1/60, 1])
 
 
 class BotBrain(BaseBrain):
@@ -137,7 +133,7 @@ class BotBrain(BaseBrain):
         self.prev_car_state = None
         self.prev_rays_dists = None
         self.prev_action = None
-        self.mean_reward = 0
+        self.step = 0
 
     def get_brain_type(self) -> BaseBrainType:
         return BaseBrainType.BotBrain
@@ -146,9 +142,10 @@ class BotBrain(BaseBrain):
         self.trainer.train()
         input_data = self.trainer.concat_to_input([rays_dists], [car_state], [player_state])
         output = self.trainer.predict(input_data)
-        self.eps = math.exp(-(player_state.time_elapsed - 30) / 600)
+        self.eps = math.exp(-(player_state.time_elapsed - 30) / 150)
         self.eps = max(self.eps, 0.01)
         self.eps = min(self.eps, 1)
+
 
         if random.random() < 0.0001:
             print(f"eps={self.eps}")
@@ -170,9 +167,6 @@ class BotBrain(BaseBrain):
             result.append(BackAction())
         if self.prev_player_state is not None:
             self.trainer.add_dataset((self.prev_player_state, self.prev_car_state, self.prev_rays_dists, player_state, car_state, rays_dists, self.prev_action))
-            self.mean_reward = self.mean_reward * 0.9999 + self.trainer.reward(self.prev_player_state, player_state) * 0.0001
-            if random.random() < 0.0001:
-                print('mean_reward', self.mean_reward)
         self.prev_rays_dists = rays_dists
         self.prev_player_state = player_state
         self.prev_car_state = car_state

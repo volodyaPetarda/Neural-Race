@@ -11,6 +11,9 @@ class RenderEngine:
     def __init__(self, screen):
         self.screen = screen
         pygame.display.set_caption("Car Race Game")
+        self.leaderboard_positions = [
+            (16 + 144 * i, 32) for i in range(5)
+        ]
 
     def next_frame(self, context: RenderEngineContext):
         self.screen.fill((0, 0, 0))
@@ -18,16 +21,15 @@ class RenderEngine:
         self._draw_walls(context)
         self._draw_rewards(context)
         self._draw_cars(context)
+        self._draw_leaderboard(context)
 
         pygame.display.flip()
+
 
     def _draw_cars(self, context: RenderEngineContext):
         cars = context.cars
         for car in cars:
-            car_surface = pygame.Surface((car.length, car.width), pygame.SRCALPHA)
-            pygame.draw.rect(car_surface, (255, 0, 0), (0, 0, car.length, car.width))
-
-            rotated_surface = pygame.transform.rotate(car_surface, -car.angle * 180 / math.pi)
+            rotated_surface = pygame.transform.rotate(car.image, -car.angle * 180 / math.pi)
 
             rotated_rect = rotated_surface.get_rect(center=(int(car.position.x), int(car.position.y)))
 
@@ -96,3 +98,17 @@ class RenderEngine:
                     (reward_intersect.x, reward_intersect.y),
                 1
                 )
+
+    def _draw_leaderboard(self, context: RenderEngineContext):
+        leaderboard_cars = sorted([
+            car for car in context.cars if car in context.car_person_images
+        ], key=lambda car: context.cars_reward_ind[car], reverse=True)
+
+        for car, draw_position in zip(leaderboard_cars, self.leaderboard_positions):
+            self.screen.blit(context.car_person_images[car], draw_position)
+            self.screen.blit(car.image, (draw_position[0] + 16, draw_position[1] - 16))
+
+            font = pygame.font.Font(None, 48)
+            text_surface = font.render(str(context.cars_reward_ind[car]), True, (255, 255, 0))
+            text_rect = text_surface.get_rect(topleft=(draw_position[0] + 64, draw_position[1] - 32))
+            self.screen.blit(text_surface, text_rect)

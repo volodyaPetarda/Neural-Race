@@ -17,21 +17,27 @@ from utils.track_serializer import TrackSerializer
 if __name__ == "__main__":
     pygame.init()
     user_brain = UserBrain()
-    user_car = Car(user_brain, Vector2D(1000, 500), Vector2D(0, 0), math.pi/2)
+    images = [
+        pygame.image.load('data/images/car_' + str(i) + '.png') for i in range(1, 6)
+    ]
+    user_car = Car(user_brain, Vector2D(1000, 500), Vector2D(0, 0), math.pi/2, images[0])
 
     trainer = Trainer(32)
     bot_brain = [BotBrain(trainer) for _ in range(20)]
-    bot_cars = [Car(bot_brain[_], Vector2D(1000, 500), Vector2D(0, 0), math.pi/2) for _ in range(20)]
+    bot_cars = [Car(bot_brain[_], Vector2D(1000, 500), Vector2D(0, 0), math.pi/2, images[_ % 4 + 1]) for _ in range(15)]
 
     physics_engine = PhysicsEngine()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     render_engine = RenderEngine(screen)
 
     track_serializer = TrackSerializer('data/races')
-    track = track_serializer.load('eight')
+    track = track_serializer.load('saving')
 
     rays_count = {user_car: 0}
     rays_count.update({bot_car: 16 for bot_car in bot_cars})
+
+    think_every = {car: (i % 5, 5) for i, car in enumerate(bot_cars)}
+
     game_context = GameContext(
         physics_engine=physics_engine,
         render_engine=render_engine,
@@ -40,9 +46,10 @@ if __name__ == "__main__":
         draw_rays={user_car: False},
         rays_count=rays_count,
         track=track,
+        think_every=think_every,
     )
     game = Game(game_context)
-    TARGET_FPS = 15
+    TARGET_FPS = 60
     frames = 0
     gstart_time = time.monotonic()
     last_time = time.monotonic()
@@ -69,7 +76,7 @@ if __name__ == "__main__":
 
         last_time = start_time
         frames += 1
-        if frames % 100 == 0:
+        if frames % 10 == 0:
             print('frames', frames / (time.monotonic() - gstart_time))
 
     pygame.quit()

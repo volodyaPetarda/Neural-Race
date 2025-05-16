@@ -15,7 +15,6 @@ class PhysicsEngine:
         pass
 
     def next_frame(self, context: PhysicsEngineContext):
-
         self._handle_cars(context)
 
     def _handle_cars(self, context: PhysicsEngineContext):
@@ -35,32 +34,37 @@ class PhysicsEngine:
         car.velocity *= (0.5 * ang + (1 - ang) * 0.01) ** delta_time
 
     def _handle_actions(self, context: PhysicsEngineContext, car: Car):
+        think_from, think_every = context.think_every[car]
         delta_time = context.delta_time
+        if context.step % think_every == think_from:
 
-        player_state = PlayerState(
-            context.cars_reward_ind[car],
-            context.cars_deaths[car],
-            context.time_elapsed,
-            context.delta_time,
-            context.last_reward_collected[car]
-        )
-        car_state = CarState(
-            velocity=car.velocity,
-            angle=car.angle
-        )
+            player_state = PlayerState(
+                context.cars_reward_ind[car],
+                context.cars_deaths[car],
+                context.time_elapsed,
+                context.delta_time,
+                context.last_reward_collected[car]
+            )
+            car_state = CarState(
+                velocity=car.velocity,
+                angle=car.angle
+            )
 
-        rays_count = context.rays_count
-        numpy_rays = get_numpy_batch_rays(car.position, car.angle, rays_count[car])
-        walls_intersects = get_batch_ray_intersect_segments(numpy_rays, context.precomputed_numpy_walls)
-        reward_ind = context.cars_reward_ind[car]
-        reward_segment = context.track.get_reward_segment(reward_ind)
-        rewards_intersects = get_batch_ray_intersect_segments(numpy_rays, _precompute_segment_data([reward_segment]))
-        intersects = walls_intersects + rewards_intersects
-        rays_dists = [
-            (intersect - car.position).magnitude() if intersect else 1000 for intersect in intersects
-        ]
+            rays_count = context.rays_count
+            numpy_rays = get_numpy_batch_rays(car.position, car.angle, rays_count[car])
+            walls_intersects = get_batch_ray_intersect_segments(numpy_rays, context.precomputed_numpy_walls)
+            reward_ind = context.cars_reward_ind[car]
+            reward_segment = context.track.get_reward_segment(reward_ind)
+            rewards_intersects = get_batch_ray_intersect_segments(numpy_rays, _precompute_segment_data([reward_segment]))
+            intersects = walls_intersects + rewards_intersects
+            rays_dists = [
+                (intersect - car.position).magnitude() if intersect else 1000 for intersect in intersects
+            ]
 
-        actions = car.get_actions(player_state, car_state, rays_dists)
+            actions = car.get_actions(player_state, car_state, rays_dists)
+        else:
+            actions = context.prev_action[car]
+        context.prev_action[car] = actions
 
         have_nitro = any(isinstance(action, NitroAction) for action in actions)
 

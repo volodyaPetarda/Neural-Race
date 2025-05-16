@@ -24,11 +24,11 @@ class TraceBuilder:
         self.start_rotation = 0
         self.last_clicked = None
 
-        image_save = pygame.image.load("data/images/build_trace.jpg")
-        image_save_pressed = pygame.image.load("data/images/build_trace_pressed.jpg")
-        self.save_trace_button = Button(600, 600, image_save, image_save_pressed, 600, 150, self.screen)
+        image_save = pygame.image.load("data/images/save_trace.png")
+        image_save_pressed = pygame.image.load("data/images/save_trace_pressed.png")
+        self.save_trace_button = Button(600, 600, image_save, image_save_pressed, 300, 150, self.screen)
         self.save_name_input = TextInput(
-            600, 300, 600, 150, pygame.font.Font(None, 64), self.screen
+            600, 300, 300, 150, pygame.font.Font(None, 64), self.screen
         )
 
         self.track_serializer = TrackSerializer('data/races')
